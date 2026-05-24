@@ -1,36 +1,46 @@
 // ===== FEED SCREEN =====
-import { mockGrow } from '../data/mockData';
+import { getGrow } from '../data/storage';
 
-export default function FeedScreen() {
-  const allLogs = [...mockGrow.logs].sort((a, b) => b.date.localeCompare(a.date));
+interface FeedScreenProps {
+  onAddLog?: (plantId?: string) => void;
+}
+
+export default function FeedScreen({ onAddLog }: FeedScreenProps) {
+  const grow = getGrow();
+  const allLogs = [...grow.logs].sort((a, b) => b.date.localeCompare(a.date));
 
   function logIcon(type: string) {
     const map: Record<string, string> = {
-      water: '💧',
-      nutrients: '🧪',
-      flush: '🚿',
-      transplant: '🪴',
-      trim: '✂️',
-      top: '🔝',
-      foliar: '🌫️',
-      defoliate: '🍂',
-      pest: '🐛',
-      note: '📝',
+      water: '💧', nutrients: '🧪', flush: '🚿', transplant: '🪴',
+      trim: '✂️', top: '🔝', foliar: '🌫️', defoliate: '🍂', pest: '🐛', note: '📝',
     };
     return map[type] || '🔰';
   }
 
   return (
     <>
-      <header style={{ padding: '16px 16px 8px' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)' }}>Feed History</h1>
-        <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>All your grow activity in one place</p>
+      <header style={{ padding: '16px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)' }}>Feed History</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-dim)' }}>All your grow activity in one place</p>
+        </div>
+        <button
+          className="btn btn-primary"
+          onClick={() => onAddLog?.()}
+          style={{ padding: '6px 12px', fontSize: 13 }}
+        >+ Log</button>
       </header>
 
       <div className="scroll-area">
         <div style={{ padding: '0 16px 100px' }}>
+          {allLogs.length === 0 && (
+            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-dim)' }}>
+              No activity yet. Tap + Log to record your first feeding!
+            </div>
+          )}
+
           {allLogs.map((log) => {
-            const plant = mockGrow.plants.find((p) => p.id === log.plantId);
+            const plant = grow.plants.find((p: { id: string }) => p.id === log.plantId);
             return (
               <div key={log.id} className="card" style={{ marginBottom: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>

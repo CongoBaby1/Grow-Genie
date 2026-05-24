@@ -252,3 +252,9 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
+
+/* Typing dots animation */
+@keyframes blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}

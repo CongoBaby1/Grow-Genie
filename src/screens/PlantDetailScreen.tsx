@@ -1,11 +1,12 @@
 // ===== PLANT DETAIL SCREEN =====
 import { useMemo } from 'react';
-import { mockGrow } from '../data/mockData';
+import { getGrow } from '../data/storage';
 import type { Plant, FeedLog } from '../types';
 
 interface PlantDetailProps {
   plantId: string;
   onBack: () => void;
+  onAddLog: () => void;
 }
 
 function stageColor(stage: string) {
@@ -21,30 +22,24 @@ function stageColor(stage: string) {
 
 function logIcon(type: string) {
   const map: Record<string, string> = {
-    water: '💧',
-    nutrients: '🧪',
-    flush: '🚿',
-    transplant: '🪴',
-    trim: '✂️',
-    top: '🔝',
-    foliar: '🌫️',
-    defoliate: '🍂',
-    pest: '🐛',
-    note: '📝',
+    water: '💧', nutrients: '🧪', flush: '🚿', transplant: '🪴',
+    trim: '✂️', top: '🔝', foliar: '🌫️', defoliate: '🍂', pest: '🐛', note: '📝',
   };
   return map[type] || '🔰';
 }
 
-export default function PlantDetailScreen({ plantId, onBack }: PlantDetailProps) {
-  const plant = mockGrow.plants.find((p) => p.id === plantId) as Plant | undefined;
+export default function PlantDetailScreen({ plantId, onBack, onAddLog }: PlantDetailProps) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const plant = useMemo(() => getGrow().plants.find((p) => p.id === plantId) as Plant | undefined, [plantId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const logs = useMemo(() =>
-    mockGrow.logs
+    getGrow().logs
       .filter((l) => l.plantId === plantId)
       .sort((a, b) => b.date.localeCompare(a.date)),
     [plantId]
   );
-
-  const env = plant ? mockGrow.environments.find((e) => e.id === plant.environmentId) : undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const env = useMemo(() => plant ? getGrow().environments.find((e) => e.id === plant.environmentId) : undefined, [plant]);
 
   const today = new Date();
   const weekStart = new Date(today);
@@ -74,35 +69,25 @@ export default function PlantDetailScreen({ plantId, onBack }: PlantDetailProps)
       {/* Hero */}
       <div style={{ position: 'relative', height: 220, flexShrink: 0 }}>
         <img
-          src={plant.heroPhotoUrl}
+          src={plant.heroPhotoUrl || 'https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=800&h=600&fit=crop'}
           alt={plant.name}
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
         <div style={{
-          position: 'absolute',
-          inset: 0,
+          position: 'absolute', inset: 0,
           background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)',
         }} />
         <button
           onClick={onBack}
           style={{
-            position: 'absolute',
-            top: 12,
-            left: 12,
-            width: 36,
-            height: 36,
-            borderRadius: 10,
+            position: 'absolute', top: 12, left: 12,
+            width: 36, height: 36, borderRadius: 10,
             background: 'rgba(0,0,0,0.5)',
             border: '1px solid rgba(255,255,255,0.2)',
-            color: '#fff',
-            display: 'grid',
-            placeItems: 'center',
-            cursor: 'pointer',
-            backdropFilter: 'blur(4px)',
+            color: '#fff', display: 'grid', placeItems: 'center',
+            cursor: 'pointer', backdropFilter: 'blur(4px)',
           }}
-        >
-          ←
-        </button>
+        >←</button>
 
         <div style={{ position: 'absolute', bottom: 12, left: 16, right: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -117,12 +102,8 @@ export default function PlantDetailScreen({ plantId, onBack }: PlantDetailProps)
 
       {/* Day counter */}
       <div style={{ background: 'var(--surface)', padding: '14px 16px', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--accent)' }}>
-          DAY {plant.day}
-        </div>
-        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>
-          WEEK {plant.week}
-        </div>
+        <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--accent)' }}>DAY {plant.day}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>WEEK {plant.week}</div>
       </div>
 
       {/* Calendar strip */}
@@ -143,15 +124,15 @@ export default function PlantDetailScreen({ plantId, onBack }: PlantDetailProps)
           {/* Quick Actions */}
           <section style={{ margin: '16px 0' }}>
             <div className="qa-grid">
-              {['Water', 'Nutrients', 'Repellent', 'Trim'].map((a) => (
-                <button key={a} className="qa-item" style={{ border: 'none' }}>
-                  <span style={{ fontSize: 20 }}>
-                    {a === 'Water' && '💧'}
-                    {a === 'Nutrients' && '🧪'}
-                    {a === 'Repellent' && '🛡️'}
-                    {a === 'Trim' && '✂️'}
-                  </span>
-                  <span>{a}</span>
+              {[
+                { icon: '💧', label: 'Water' },
+                { icon: '🧪', label: 'Nutrients' },
+                { icon: '🛡️', label: 'Repellent' },
+                { icon: '✂️', label: 'Trim' },
+              ].map((a) => (
+                <button key={a.label} className="qa-item" style={{ border: 'none' }}>
+                  <span style={{ fontSize: 20 }}>{a.icon}</span>
+                  <span>{a.label}</span>
                 </button>
               ))}
             </div>
@@ -177,16 +158,10 @@ export default function PlantDetailScreen({ plantId, onBack }: PlantDetailProps)
                     className={`photo-thumb${ph.isHero ? ' is-hero' : ''}`}
                   />
                   <div style={{
-                    position: 'absolute',
-                    bottom: 4,
-                    left: 4,
-                    right: 4,
-                    fontSize: 10,
-                    color: '#fff',
+                    position: 'absolute', bottom: 4, left: 4, right: 4,
+                    fontSize: 10, color: '#fff',
                     textShadow: '0 1px 3px rgba(0,0,0,0.8)',
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    textOverflow: 'ellipsis',
+                    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
                   }}>
                     {ph.caption}
                   </div>
@@ -199,7 +174,7 @@ export default function PlantDetailScreen({ plantId, onBack }: PlantDetailProps)
           <section className="card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-bright)' }}>Recent Activity</span>
-              <span style={{ fontSize: 12, color: 'var(--accent)', cursor: 'pointer' }}>+ Log</span>
+              <button className="btn btn-primary" onClick={onAddLog} style={{ padding: '4px 12px', fontSize: 13 }}>+ Log</button>
             </div>
 
             {logs.length === 0 && (
@@ -234,7 +209,7 @@ export default function PlantDetailScreen({ plantId, onBack }: PlantDetailProps)
           {/* Notes */}
           <section className="card" style={{ marginTop: 16 }}>
             <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-bright)', display: 'block', marginBottom: 8 }}>Notes</span>
-            <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{plant.notes}</div>
+            <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>{plant.notes || 'No notes yet.'}</div>
           </section>
 
         </div>

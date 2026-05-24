@@ -1,8 +1,9 @@
 // ===== HOME / DASHBOARD SCREEN =====
-import { mockGrow } from '../data/mockData';
+import { getGrow, recalcAll } from '../data/storage';
 
 interface HomeScreenProps {
   onPlantSelect: (plantId: string) => void;
+  onAddPlant: () => void;
 }
 
 function stageColor(stage: string) {
@@ -20,12 +21,14 @@ function formatMonth(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-export default function HomeScreen({ onPlantSelect }: HomeScreenProps) {
+export default function HomeScreen({ onPlantSelect, onAddPlant }: HomeScreenProps) {
+  recalcAll();
+  const grow = getGrow();
+
   const today = new Date();
   const weekStart = new Date(today);
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Sunday
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 
-  // Build 7-day calendar strip
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
     d.setDate(d.getDate() + i);
@@ -37,27 +40,25 @@ export default function HomeScreen({ onPlantSelect }: HomeScreenProps) {
     };
   });
 
-  // Group plants by environment
-  const groups = mockGrow.environments.map((env) => ({
+  const groups = grow.environments.map((env) => ({
     env,
-    plants: mockGrow.plants.filter((p) => p.environmentId === env.id && !p.archived),
+    plants: grow.plants.filter((p) => p.environmentId === env.id && !p.archived),
   }));
 
-  const totalPlants = mockGrow.plants.filter((p) => !p.archived).length;
+  const totalPlants = grow.plants.filter((p) => !p.archived).length;
 
   return (
     <>
-      {/* Header */}
-      <header style={{ padding: '16px 16px 8px' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)' }}>
-          Grow Genie 🌿
-        </h1>
-        <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 2 }}>
-          {formatMonth(today)} — {totalPlants} active plant{totalPlants !== 1 ? 's' : ''}
-        </p>
+      <header style={{ padding: '16px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-bright)' }}>Grow Genie 🌿</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-dim)', marginTop: 2 }}>
+            {formatMonth(today)} — {totalPlants} active plant{totalPlants !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <button className="btn btn-primary" onClick={onAddPlant} style={{ padding: '8px 14px', fontSize: 13 }}>+ Plant</button>
       </header>
 
-      {/* Calendar strip */}
       <section style={{ margin: '12px 0' }}>
         <div className="cal-strip">
           {days.map((d) => (
@@ -69,10 +70,8 @@ export default function HomeScreen({ onPlantSelect }: HomeScreenProps) {
         </div>
       </section>
 
-      {/* Environments */}
       <div className="scroll-area">
         <div style={{ padding: '0 16px 100px' }}>
-          {/* Toolbox */}
           <section className="card" style={{ marginBottom: 16 }}>
             <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-bright)', marginBottom: 12 }}>Quick Actions</h2>
             <div className="qa-grid">
@@ -90,16 +89,11 @@ export default function HomeScreen({ onPlantSelect }: HomeScreenProps) {
             </div>
           </section>
 
-          {/* Plant Groups */}
           {groups.map((g) => (
             <section key={g.env.id} style={{ marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-bright)', textTransform: 'uppercase', letterSpacing: 0.4 }}>
-                  {g.env.name}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--text-dim)', background: 'var(--surface-raised)', padding: '2px 8px', borderRadius: 10 }}>
-                  {g.plants.length}
-                </span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-bright)', textTransform: 'uppercase', letterSpacing: 0.4 }}>{g.env.name}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-dim)', background: 'var(--surface-raised)', padding: '2px 8px', borderRadius: 10 }}>{g.plants.length}</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -109,19 +103,13 @@ export default function HomeScreen({ onPlantSelect }: HomeScreenProps) {
                     onClick={() => onPlantSelect(p.id)}
                     className="card"
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      width: '100%',
-                      textAlign: 'left',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      overflow: 'hidden',
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      width: '100%', textAlign: 'left',
+                      border: 'none', cursor: 'pointer', padding: 0, overflow: 'hidden',
                     }}
                   >
                     <img
-                      src={p.heroPhotoUrl || 'https://via.placeholder.com/80'}
+                      src={p.heroPhotoUrl || 'https://images.unsplash.com/photo-1603909223429-69bb7101f420?w=160&h=160&fit=crop'}
                       alt={p.name}
                       style={{ width: 72, height: 72, objectFit: 'cover', flexShrink: 0 }}
                     />
@@ -130,12 +118,8 @@ export default function HomeScreen({ onPlantSelect }: HomeScreenProps) {
                         <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-bright)' }}>{p.name}</span>
                         <span className={`chip ${stageColor(p.stage)}`}>{p.stage}</span>
                       </div>
-                      <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>
-                        {p.strain} {p.breeder && `· ${p.breeder}`}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>
-                        Day {p.day} · Week {p.week}
-                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--text-dim)', marginBottom: 4 }}>{p.strain} {p.breeder && `· ${p.breeder}`}</div>
+                      <div style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 500 }}>Day {p.day} · Week {p.week}</div>
                     </div>
                   </button>
                 ))}

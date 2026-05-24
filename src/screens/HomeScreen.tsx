@@ -1,6 +1,5 @@
 // ===== HOME / DASHBOARD SCREEN =====
 import { mockGrow } from '../data/mockData';
-import type { Plant } from '../types';
 
 interface HomeScreenProps {
   onPlantSelect: (plantId: string) => void;

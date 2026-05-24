@@ -1,6 +1,5 @@
 import type { Grow, Environment, Plant, FeedLog } from '../types';
 
-const today = new Date().toISOString().split('T')[0];
 const offsetDays = (d: number) => {
   const dt = new Date();
   dt.setDate(dt.getDate() + d);

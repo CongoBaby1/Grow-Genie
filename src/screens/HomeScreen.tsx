@@ -1,5 +1,5 @@
 // ===== HOME / DASHBOARD SCREEN =====
-import { getGrow, recalcAll } from '../data/storage';
+import { getGrow, recalcAll, getReminders } from '../data/storage';
 
 interface HomeScreenProps {
   onPlantSelect: (plantId: string) => void;
@@ -22,9 +22,18 @@ function formatMonth(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
+function sevColor(sev: string) {
+  switch (sev) {
+    case 'due-today': return { bg: 'rgba(239,68,68,0.15)', border: 'var(--danger)', color: '#ef4444' };
+    case 'this-week': return { bg: 'rgba(245,158,11,0.15)', border: '#f59e0b', color: '#f59e0b' };
+    default: return { bg: 'var(--surface-raised)', border: 'var(--border)', color: 'var(--text-dim)' };
+  }
+}
+
 export default function HomeScreen({ onPlantSelect, onAddPlant, onOpenSchedules }: HomeScreenProps) {
   recalcAll();
   const grow = getGrow();
+  const reminders = getReminders();
 
   const today = new Date();
   const weekStart = new Date(today);
@@ -95,6 +104,43 @@ export default function HomeScreen({ onPlantSelect, onAddPlant, onOpenSchedules 
               ))}
             </div>
           </section>
+
+          {/* Reminders */}
+          {reminders.length > 0 && (
+            <section className="card" style={{ marginBottom: 16 }}>
+              <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-bright)', marginBottom: 12 }}>🔔 Reminders</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {reminders.map((r) => {
+                  const s = sevColor(r.severity);
+                  return (
+                    <button
+                      key={`${r.plantId}-${r.type}-${r.dueWeek}`}
+                      onClick={() => onPlantSelect(r.plantId)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 10,
+                        padding: '10px 12px',
+                        borderRadius: 10,
+                        background: s.bg,
+                        border: `1px solid ${s.border}`,
+                        width: '100%',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        color: 'var(--text)',
+                      }}
+                    >
+                      <span style={{ fontSize: 18, flexShrink: 0 }}>{r.type === 'schedule' ? '🧪' : '💧'}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: s.color }}>{r.message}</div>
+                        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 2 }}>{r.plantName}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {groups.map((g) => (
             <section key={g.env.id} style={{ marginBottom: 16 }}>

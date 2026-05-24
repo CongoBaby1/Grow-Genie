@@ -1,7 +1,7 @@
 // ===== ENVIRONMENT MANAGEMENT SCREEN =====
 import { useState } from 'react';
-import { getGrow, addEnvironment, updateEnvironment, deleteEnvironment } from '../data/storage';
-import type { Environment } from '../types';
+import { getGrow, addEnvironment, updateEnvironment, deleteEnvironment, updateEnvironmentSettings } from '../data/storage';
+import type { Environment, EnvironmentSettings } from '../types';
 
 interface EnvironmentsScreenProps {
   onClose: () => void;
@@ -14,12 +14,19 @@ const ENV_TYPES = [
   { key: 'cabinet', label: 'Cabinet', icon: '🗄️' },
 ] as const;
 
+const LIGHT_SCHEDULES = ['18/6', '20/4', '12/12', '24/0', '10/14'];
+const LIGHT_TYPES = ['LED', 'HPS', 'CMH', 'CFL', 'T5'];
+const MEDIUMS = ['Coco', 'Soil', 'Hydro', 'Rockwool', 'Peat', 'Aeroponics'];
+const POT_SIZES = ['1 gallon', '2 gallon', '3 gallon', '5 gallon', '7 gallon', '10 gallon', '15 gallon'];
+
 export default function EnvironmentsScreen({ onClose }: EnvironmentsScreenProps) {
   const [grow, setGrow] = useState(() => getGrow());
   const [editing, setEditing] = useState<Environment | null>(null);
   const [name, setName] = useState('');
   const [type, setType] = useState<Environment['type']>('tent');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<EnvironmentSettings>({});
 
   const refresh = () => setGrow(getGrow());
 
@@ -27,12 +34,24 @@ export default function EnvironmentsScreen({ onClose }: EnvironmentsScreenProps)
     setEditing(null);
     setName('');
     setType('tent');
+    setSettings({});
+    setShowSettings(false);
   };
 
   const startEdit = (env: Environment) => {
     setEditing(env);
     setName(env.name);
     setType(env.type);
+    setSettings(env.settings ?? {});
+    setShowSettings(false);
+  };
+
+  const startSettings = (env: Environment) => {
+    setEditing(env);
+    setName(env.name);
+    setType(env.type);
+    setSettings(env.settings ?? {});
+    setShowSettings(true);
   };
 
   const handleSave = () => {
@@ -45,6 +64,14 @@ export default function EnvironmentsScreen({ onClose }: EnvironmentsScreenProps)
     refresh();
     setEditing(null);
     setName('');
+    setShowSettings(false);
+  };
+
+  const handleSaveSettings = () => {
+    if (!editing) return;
+    updateEnvironmentSettings(editing.id, settings);
+    refresh();
+    setShowSettings(false);
   };
 
   const handleDelete = (id: string) => {
@@ -81,7 +108,7 @@ export default function EnvironmentsScreen({ onClose }: EnvironmentsScreenProps)
       <div className="scroll-area">
         <div style={{ padding: '16px 16px 100px' }}>
           {/* Add / Edit Form */}
-          {(editing !== null || name !== '') && (
+          {(editing !== null || name !== '') && !showSettings && (
             <section className="card" style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-bright)', marginBottom: 12 }}>
                 {editing ? 'Edit Environment' : 'New Environment'}
@@ -128,12 +155,39 @@ export default function EnvironmentsScreen({ onClose }: EnvironmentsScreenProps)
             </section>
           )}
 
+          {/* Settings Form */}
+          {showSettings && editing && (
+            <section className="card" style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-bright)' }}>{editing.name} — Settings</div>
+                <button className="btn btn-ghost btn-icon" onClick={() => setShowSettings(false)} style={{ fontSize: 12 }}>Close</button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {selectField('Light Schedule', settings.lightSchedule, LIGHT_SCHEDULES, (v) => setSettings({ ...settings, lightSchedule: v }))}
+                {selectField('Light Type', settings.lightType, LIGHT_TYPES, (v) => setSettings({ ...settings, lightType: v }))}
+                {numberField('Wattage (W)', settings.lightWattage, (v) => setSettings({ ...settings, lightWattage: v }))}
+                {textField('Tent / Room Size', settings.tentSize, (v) => setSettings({ ...settings, tentSize: v }))}
+                {selectField('Medium', settings.medium, MEDIUMS, (v) => setSettings({ ...settings, medium: v }))}
+                {selectField('Pot Size', settings.potSize, POT_SIZES, (v) => setSettings({ ...settings, potSize: v }))}
+                {textField('Ventilation', settings.ventilation, (v) => setSettings({ ...settings, ventilation: v }))}
+                {textField('Notes', settings.notes, (v) => setSettings({ ...settings, notes: v }), true)}
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+                <button className="btn btn-primary" onClick={handleSaveSettings} style={{ flex: 1 }}>Save Settings</button>
+                <button className="btn btn-ghost" onClick={() => setShowSettings(false)}>Cancel</button>
+              </div>
+            </section>
+          )}
+
           {/* List */}
           {grow.environments.map((env) => {
             const plantCount = grow.plants.filter((p) => p.environmentId === env.id && !p.archived).length;
             const typeLabel = ENV_TYPES.find((t) => t.key === env.type);
+            const hasSettings = env.settings && Object.keys(env.settings).some((k) => env.settings![k as keyof EnvironmentSettings]);
             return (
-              <section key={env.id} className="card" style={{ marginBottom: 10, display: 'flex', gap: 12, alignItems: 'center' }}>
+              <section key={env.id} className="card" style={{ marginBottom: 10, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <div style={{
                   width: 44, height: 44, borderRadius: 12,
                   background: 'var(--accent-soft)',
@@ -146,15 +200,26 @@ export default function EnvironmentsScreen({ onClose }: EnvironmentsScreenProps)
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-bright)' }}>{env.name}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>{typeLabel?.label || env.type} · {plantCount} plant{plantCount !== 1 ? 's' : ''}</div>
+                  {hasSettings && (
+                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 4, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {env.settings!.lightSchedule && <span className="chip" style={{ fontSize: 10 }}>☀️ {env.settings!.lightSchedule}</span>}
+                      {env.settings!.lightType && <span className="chip" style={{ fontSize: 10 }}>💡 {env.settings!.lightType}</span>}
+                      {env.settings!.medium && <span className="chip" style={{ fontSize: 10 }}>🌱 {env.settings!.medium}</span>}
+                      {env.settings!.tentSize && <span className="chip" style={{ fontSize: 10 }}>📐 {env.settings!.tentSize}</span>}
+                    </div>
+                  )}
                 </div>
 
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn btn-ghost btn-icon" onClick={() => startEdit(env)} style={{ width: 32, height: 32, fontSize: 14 }}>✎</button>
-                  <button
-                    className="btn btn-ghost btn-icon"
-                    onClick={() => setConfirmDelete(env.id)}
-                    style={{ width: 32, height: 32, fontSize: 14, color: 'var(--danger)' }}
-                  >🗑</button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <button className="btn btn-ghost btn-icon" onClick={() => startSettings(env)} style={{ fontSize: 12 }}>⚙</button>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button className="btn btn-ghost btn-icon" onClick={() => startEdit(env)} style={{ width: 28, height: 28, fontSize: 12 }}>✎</button>
+                    <button
+                      className="btn btn-ghost btn-icon"
+                      onClick={() => setConfirmDelete(env.id)}
+                      style={{ width: 28, height: 28, fontSize: 12, color: 'var(--danger)' }}
+                    >🗑</button>
+                  </div>
                 </div>
               </section>
             );
@@ -198,4 +263,59 @@ function inputStyle(): React.CSSProperties {
     fontSize: 15,
     outline: 'none',
   };
+}
+
+function selectField(labelText: string, value: string | undefined, options: string[], onChange: (v: string) => void) {
+  return (
+    <div>
+      {label(labelText)}
+      <select value={value || ''} onChange={(e) => onChange(e.target.value)} style={inputStyle()}>
+        <option value="">Select {labelText.toLowerCase()}...</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  );
+}
+
+function numberField(labelText: string, value: number | undefined, onChange: (v: number | undefined) => void) {
+  return (
+    <div>
+      {label(labelText)}
+      <input
+        type="number"
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
+        placeholder={labelText}
+        style={inputStyle()}
+      />
+    </div>
+  );
+}
+
+function textField(labelText: string, value: string | undefined, onChange: (v: string) => void, multiline = false) {
+  if (multiline) {
+    return (
+      <div>
+        {label(labelText)}
+        <textarea
+          value={value || ''}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={labelText}
+          rows={3}
+          style={{ ...inputStyle(), resize: 'vertical' }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div>
+      {label(labelText)}
+      <input
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={labelText}
+        style={inputStyle()}
+      />
+    </div>
+  );
 }

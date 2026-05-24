@@ -5,9 +5,10 @@ import { getSchedules, applyScheduleToLog, getGrow, BUILT_IN_SCHEDULES } from '.
 interface SchedulesScreenProps {
   preselectedPlantId?: string;
   onClose: () => void;
+  onCreateNew: () => void;
 }
 
-export default function SchedulesScreen({ preselectedPlantId, onClose }: SchedulesScreenProps) {
+export default function SchedulesScreen({ preselectedPlantId, onClose, onCreateNew }: SchedulesScreenProps) {
   const [schedules] = useState(() => getSchedules());
   const [selectedPlant, setSelectedPlant] = useState(preselectedPlantId || '');
   const [selectedSchedule, setSelectedSchedule] = useState('');
@@ -52,6 +53,14 @@ export default function SchedulesScreen({ preselectedPlantId, onClose }: Schedul
 
       <div className="scroll-area">
         <div style={{ padding: '16px 16px 100px' }}>
+
+          <button
+            className="btn btn-primary"
+            onClick={onCreateNew}
+            style={{ width: '100%', marginBottom: 16 }}
+          >
+            + Create Custom Schedule
+          </button>
 
           {/* Plant selector */}
           <section className="card" style={{ marginBottom: 16 }}>

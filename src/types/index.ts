@@ -2,10 +2,22 @@
 
 export type GrowStage = 'germination' | 'seedling' | 'vegetative' | 'flowering' | 'harvest';
 
+export interface EnvironmentSettings {
+  lightSchedule?: string;     // e.g. "18/6", "12/12", "20/4"
+  lightType?: string;         // e.g. "LED", "HPS", "CMH"
+  lightWattage?: number;        // e.g. 600
+  tentSize?: string;            // e.g. "4x4"
+  medium?: string;              // e.g. "Coco", "Soil", "Hydro", "Rockwool"
+  potSize?: string;             // e.g. "3 gallon", "5 gallon"
+  ventilation?: string;         // e.g. "6\" inline fan"
+  notes?: string;
+}
+
 export interface Environment {
   id: string;
   name: string;
   type: 'tent' | 'room' | 'outdoor' | 'cabinet';
+  settings?: EnvironmentSettings;
 }
 
 export interface Plant {
@@ -14,6 +26,7 @@ export interface Plant {
   strain: string;
   breeder?: string;
   environmentId: string;
+  scheduleId?: string;          // linked nutrient schedule
   stage: GrowStage;
   day: number;
   week: number;

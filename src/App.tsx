@@ -11,6 +11,7 @@ import AddPlantScreen from './screens/AddPlantScreen';
 import AddLogScreen from './screens/AddLogScreen';
 import SchedulesScreen from './screens/SchedulesScreen';
 import EnvironmentsScreen from './screens/EnvironmentsScreen';
+import CustomScheduleScreen from './screens/CustomScheduleScreen';
 
 type Screen = 'home' | 'plants' | 'feed' | 'gallery' | 'genie' | 'profile';
 
@@ -20,6 +21,7 @@ export default function App() {
   const [showAddPlant, setShowAddPlant] = useState(false);
   const [showAddLog, setShowAddLog] = useState(false);
   const [showSchedules, setShowSchedules] = useState(false);
+  const [showCustomSchedule, setShowCustomSchedule] = useState(false);
   const [showEnvironments, setShowEnvironments] = useState(false);
   const [schedulePlantId, setSchedulePlantId] = useState<string | undefined>(undefined);
   const [logTargetPlant, setLogTargetPlant] = useState<string | null>(null);
@@ -152,6 +154,13 @@ export default function App() {
         <SchedulesScreen
           preselectedPlantId={schedulePlantId}
           onClose={() => { setShowSchedules(false); setSchedulePlantId(undefined); }}
+          onCreateNew={() => { setShowCustomSchedule(true); }}
+        />
+      )}
+
+      {showCustomSchedule && (
+        <CustomScheduleScreen
+          onClose={() => setShowCustomSchedule(false)}
         />
       )}
 

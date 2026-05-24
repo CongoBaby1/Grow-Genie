@@ -1,5 +1,5 @@
 // ===== LOCALSTORAGE DATA SERVICE =====
-import type { Grow, Plant, FeedLog, Environment, PlantPhoto, NutrientSchedule } from '../types';
+import type { Grow, Plant, FeedLog, Environment, PlantPhoto, NutrientSchedule, EnvironmentSettings } from '../types';
 import { mockGrow } from './mockData';
 
 const STORAGE_KEY = 'grow-genie-data';
@@ -85,13 +85,21 @@ export function addPlant(
 
 export function updatePlant(
   id: string,
-  patch: Partial<Pick<Plant, 'name' | 'strain' | 'breeder' | 'environmentId' | 'stage' | 'notes' | 'archived'>>
+  patch: Partial<Pick<Plant, 'name' | 'strain' | 'breeder' | 'environmentId' | 'scheduleId' | 'stage' | 'notes' | 'archived'>>
 ) {
   mutate((d) => {
     const p = d.plants.find((x) => x.id === id);
     if (!p) return;
     Object.assign(p, patch);
     recalcDayWeek(p);
+  });
+}
+
+export function updateEnvironmentSettings(id: string, settings: EnvironmentSettings) {
+  mutate((d) => {
+    const e = d.environments.find((x) => x.id === id);
+    if (!e) return;
+    e.settings = { ...(e.settings ?? {}), ...settings };
   });
 }
 
@@ -344,4 +352,84 @@ export function recalcAll() {
 // Reset to mock data (debug)
 export function resetToMock() {
   cache = seed();
+}
+
+// --- reminder engine ---
+
+export interface Reminder {
+  type: 'schedule' | 'action' | 'general';
+  plantId: string;
+  plantName: string;
+  message: string;
+  dueWeek: number;
+  severity: 'due-today' | 'this-week' | 'upcoming';
+}
+
+export function getReminders(): Reminder[] {
+  const grow = getGrow();
+  const out: Reminder[] = [];
+
+  for (const p of grow.plants) {
+    if (p.archived) continue;
+
+    // 1. Scheduled nutrient applications
+    if (p.scheduleId) {
+      const sched = getSchedules().find((s) => s.id === p.scheduleId);
+      if (sched) {
+        for (const entry of sched.entries) {
+          if (entry.week === p.week) {
+            // Check if already applied this week
+            const appliedThisWeek = grow.logs.some(
+              (l) =>
+                l.plantId === p.id &&
+                l.type === 'nutrients' &&
+                l.date >= new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0]
+            );
+            if (!appliedThisWeek) {
+              out.push({
+                type: 'schedule',
+                plantId: p.id,
+                plantName: p.name,
+                message: `${sched.name}: Week ${entry.week} — ${entry.products.map((pr) => pr.product).join(', ')}`,
+                dueWeek: entry.week,
+                severity: 'due-today',
+              });
+            }
+          } else if (entry.week === p.week + 1) {
+            out.push({
+              type: 'schedule',
+              plantId: p.id,
+              plantName: p.name,
+              message: `${sched.name}: Week ${entry.week} coming up — ${entry.products.map((pr) => pr.product).join(', ')}`,
+              dueWeek: entry.week,
+              severity: 'this-week',
+            });
+          }
+        }
+      }
+    }
+
+    // 2. Watering reminder (if no water log in last 3 days)
+    const lastWater = grow.logs
+      .filter((l) => l.plantId === p.id && l.type === 'water')
+      .sort((a, b) => b.date.localeCompare(a.date))[0];
+    const daysSinceWater = lastWater
+      ? Math.floor((Date.now() - new Date(lastWater.date).getTime()) / 86400000)
+      : 999;
+    if (daysSinceWater >= 3) {
+      out.push({
+        type: 'action',
+        plantId: p.id,
+        plantName: p.name,
+        message: daysSinceWater >= 5 ? `Needs water urgently — ${daysSinceWater} days dry` : `Time to water — ${daysSinceWater} days since last watering`,
+        dueWeek: p.week,
+        severity: daysSinceWater >= 5 ? 'due-today' : 'this-week',
+      });
+    }
+  }
+
+  return out.sort((a, b) => {
+    const sevOrder = { 'due-today': 0, 'this-week': 1, upcoming: 2 };
+    return sevOrder[a.severity] - sevOrder[b.severity];
+  });
 }

@@ -206,7 +206,7 @@ export default function AIAssistantScreen() {
             width: 40, height: 40, borderRadius: 20, padding: 0,
             opacity: !input.trim() || typing ? 0.4 : 1,
           }}
-        >➤</button>
+        >▶</button>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ interface PlantDetailProps {
   plantId: string;
   onBack: () => void;
   onAddLog: () => void;
+  onOpenSchedules: () => void;
 }
 
 function stageColor(stage: string) {
@@ -28,7 +29,7 @@ function logIcon(type: string) {
   return map[type] || '🔰';
 }
 
-export default function PlantDetailScreen({ plantId, onBack, onAddLog }: PlantDetailProps) {
+export default function PlantDetailScreen({ plantId, onBack, onAddLog, onOpenSchedules }: PlantDetailProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const plant = useMemo(() => getGrow().plants.find((p) => p.id === plantId) as Plant | undefined, [plantId]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -126,11 +127,11 @@ export default function PlantDetailScreen({ plantId, onBack, onAddLog }: PlantDe
             <div className="qa-grid">
               {[
                 { icon: '💧', label: 'Water' },
-                { icon: '🧪', label: 'Nutrients' },
+                { icon: '🧪', label: 'Nutrients', action: onOpenSchedules },
                 { icon: '🛡️', label: 'Repellent' },
                 { icon: '✂️', label: 'Trim' },
               ].map((a) => (
-                <button key={a.label} className="qa-item" style={{ border: 'none' }}>
+                <button key={a.label} className="qa-item" style={{ border: 'none' }} onClick={a.action} disabled={!a.action}>
                   <span style={{ fontSize: 20 }}>{a.icon}</span>
                   <span>{a.label}</span>
                 </button>

@@ -34,6 +34,20 @@ export interface PlantPhoto {
 
 export type ActionType = 'water' | 'nutrients' | 'flush' | 'transplant' | 'trim' | 'top' | 'foliar' | 'defoliate' | 'pest' | 'note';
 
+export interface ScheduleEntry {
+  week: number;
+  products: ProductDose[];
+  note?: string;
+}
+
+export interface NutrientSchedule {
+  id: string;
+  name: string;
+  targetStage: GrowStage;
+  entries: ScheduleEntry[];
+  brand?: string; // e.g. "Advanced Nutrients"
+}
+
 export interface FeedLog {
   id: string;
   plantId: string;

@@ -1,5 +1,5 @@
 // ===== LOCALSTORAGE DATA SERVICE =====
-import type { Grow, Plant, FeedLog, Environment, PlantPhoto } from '../types';
+import type { Grow, Plant, FeedLog, Environment, PlantPhoto, NutrientSchedule } from '../types';
 import { mockGrow } from './mockData';
 
 const STORAGE_KEY = 'grow-genie-data';
@@ -102,12 +102,166 @@ export function deletePlant(id: string) {
   });
 }
 
+// --- built-in nutrient schedules ---
+
+export const BUILT_IN_SCHEDULES: NutrientSchedule[] = [
+  {
+    id: 'sched-an-veg',
+    name: 'Advanced Nutrients — Vegetative',
+    targetStage: 'vegetative',
+    brand: 'Advanced Nutrients',
+    entries: [
+      { week: 1, products: [{ product: 'Voodoo Juice', amount: 2, unit: 'ml', perGallon: true }], note: 'Root stimulator, full strength' },
+      { week: 2, products: [{ product: 'Grow A+B', amount: 4, unit: 'ml', perGallon: true }], note: 'Base nutrients at 50% strength' },
+      { week: 3, products: [{ product: 'Grow A+B', amount: 4, unit: 'ml', perGallon: true }, { product: 'B-52', amount: 2, unit: 'ml', perGallon: true }], note: 'B vitamins for stress resistance' },
+      { week: 4, products: [{ product: 'Grow A+B', amount: 4, unit: 'ml', perGallon: true }, { product: 'Voodoo Juice', amount: 2, unit: 'ml', perGallon: true }], note: 'Full grow strength, root health' },
+    ],
+  },
+  {
+    id: 'sched-an-flower',
+    name: 'Advanced Nutrients — Flowering',
+    targetStage: 'flowering',
+    brand: 'Advanced Nutrients',
+    entries: [
+      { week: 1, products: [{ product: 'Bloom A+B', amount: 4, unit: 'ml', perGallon: true }, { product: 'Big Bud', amount: 2, unit: 'ml', perGallon: true }], note: 'Transition to bloom, pistils forming' },
+      { week: 2, products: [{ product: 'Bloom A+B', amount: 4, unit: 'ml', perGallon: true }, { product: 'Big Bud', amount: 4, unit: 'ml', perGallon: true }], note: 'Buds swelling, increase P/K' },
+      { week: 3, products: [{ product: 'Bloom A+B', amount: 4, unit: 'ml', perGallon: true }, { product: 'Big Bud', amount: 4, unit: 'ml', perGallon: true }, { product: 'Overdrive', amount: 2, unit: 'ml', perGallon: true }], note: 'Heavy bloom phase' },
+      { week: 4, products: [{ product: 'Bloom A+B', amount: 4, unit: 'ml', perGallon: true }, { product: 'Overdrive', amount: 4, unit: 'ml', perGallon: true }], note: 'Late bloom, ripening' },
+      { week: 5, products: [{ product: 'Bloom A+B', amount: 2, unit: 'ml', perGallon: true }], note: 'Taper down, prepare for flush' },
+    ],
+  },
+  {
+    id: 'sched-gh-veg',
+    name: 'General Hydroponics — Vegetative',
+    targetStage: 'vegetative',
+    brand: 'General Hydroponics',
+    entries: [
+      { week: 1, products: [{ product: 'FloraGro', amount: 3, unit: 'ml', perGallon: true }, { product: 'FloraMicro', amount: 2, unit: 'ml', perGallon: true }], note: 'Light veg start' },
+      { week: 2, products: [{ product: 'FloraGro', amount: 3, unit: 'ml', perGallon: true }, { product: 'FloraMicro', amount: 2, unit: 'ml', perGallon: true }, { product: 'CaliMagic', amount: 2, unit: 'ml', perGallon: true }], note: 'Add Cal-Mag' },
+      { week: 3, products: [{ product: 'FloraGro', amount: 5, unit: 'ml', perGallon: true }, { product: 'FloraMicro', amount: 3, unit: 'ml', perGallon: true }, { product: 'CaliMagic', amount: 2, unit: 'ml', perGallon: true }], note: 'Full veg strength' },
+    ],
+  },
+  {
+    id: 'sched-gh-flower',
+    name: 'General Hydroponics — Flowering',
+    targetStage: 'flowering',
+    brand: 'General Hydroponics',
+    entries: [
+      { week: 1, products: [{ product: 'FloraBloom', amount: 3, unit: 'ml', perGallon: true }, { product: 'FloraMicro', amount: 2, unit: 'ml', perGallon: true }], note: 'Switch to bloom, reduce nitrogen' },
+      { week: 2, products: [{ product: 'FloraBloom', amount: 4, unit: 'ml', perGallon: true }, { product: 'FloraMicro', amount: 2, unit: 'ml', perGallon: true }, { product: 'CaliMagic', amount: 2, unit: 'ml', perGallon: true }], note: 'Increase phosphorus' },
+      { week: 3, products: [{ product: 'FloraBloom', amount: 5, unit: 'ml', perGallon: true }, { product: 'FloraMicro', amount: 3, unit: 'ml', perGallon: true }, { product: 'Liquid KoolBloom', amount: 2, unit: 'ml', perGallon: true }], note: 'Add bloom booster' },
+      { week: 4, products: [{ product: 'FloraBloom', amount: 5, unit: 'ml', perGallon: true }, { product: 'Liquid KoolBloom', amount: 3, unit: 'ml', perGallon: true }], note: 'Late bloom push' },
+      { week: 5, products: [{ product: 'FloraBloom', amount: 2, unit: 'ml', perGallon: true }], note: 'Taper down pre-flush' },
+    ],
+  },
+  {
+    id: 'sched-ff-veg',
+    name: 'Fox Farm — Vegetative',
+    targetStage: 'vegetative',
+    brand: 'Fox Farm',
+    entries: [
+      { week: 1, products: [{ product: 'Grow Big', amount: 1, unit: 'tsp', perGallon: true }], note: '1/4 strength seedling week' },
+      { week: 2, products: [{ product: 'Grow Big', amount: 2, unit: 'tsp', perGallon: true }, { product: 'Big Bloom', amount: 2, unit: 'tsp', perGallon: true }], note: '1/2 strength' },
+      { week: 3, products: [{ product: 'Grow Big', amount: 3, unit: 'tsp', perGallon: true }, { product: 'Big Bloom', amount: 2, unit: 'tsp', perGallon: true }], note: 'Full grow strength' },
+    ],
+  },
+  {
+    id: 'sched-ff-flower',
+    name: 'Fox Farm — Flowering',
+    targetStage: 'flowering',
+    brand: 'Fox Farm',
+    entries: [
+      { week: 1, products: [{ product: 'Tiger Bloom', amount: 2, unit: 'tsp', perGallon: true }, { product: 'Big Bloom', amount: 2, unit: 'tsp', perGallon: true }], note: 'Switch to Tiger Bloom' },
+      { week: 2, products: [{ product: 'Tiger Bloom', amount: 3, unit: 'tsp', perGallon: true }, { product: 'Big Bloom', amount: 2, unit: 'tsp', perGallon: true }], note: 'Increase bloom' },
+      { week: 3, products: [{ product: 'Tiger Bloom', amount: 3, unit: 'tsp', perGallon: true }, { product: 'Big Bloom', amount: 3, unit: 'tsp', perGallon: true }], note: 'Full flower strength' },
+      { week: 4, products: [{ product: 'Tiger Bloom', amount: 2, unit: 'tsp', perGallon: true }], note: 'Taper down' },
+    ],
+  },
+];
+
+const SCHEDULES_KEY = 'grow-genie-schedules';
+
+export function getSchedules(): NutrientSchedule[] {
+  try {
+    const raw = localStorage.getItem(SCHEDULES_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw) as NutrientSchedule[];
+      return [...BUILT_IN_SCHEDULES, ...saved];
+    }
+  } catch { /* ignore */ }
+  return [...BUILT_IN_SCHEDULES];
+}
+
+export function saveCustomSchedule(schedule: NutrientSchedule) {
+  const all = getSchedules();
+  const builtInIds = new Set(BUILT_IN_SCHEDULES.map((s) => s.id));
+  const customs = all.filter((s) => !builtInIds.has(s.id));
+  const idx = customs.findIndex((s) => s.id === schedule.id);
+  if (idx >= 0) customs[idx] = schedule;
+  else customs.push(schedule);
+  localStorage.setItem(SCHEDULES_KEY, JSON.stringify(customs));
+}
+
+export function deleteCustomSchedule(id: string) {
+  const all = getSchedules();
+  const builtInIds = new Set(BUILT_IN_SCHEDULES.map((s) => s.id));
+  const customs = all.filter((s) => !builtInIds.has(s.id) && s.id !== id);
+  localStorage.setItem(SCHEDULES_KEY, JSON.stringify(customs));
+}
+
+export function applyScheduleToLog(plantId: string, scheduleId: string, week: number): boolean {
+  const schedules = getSchedules();
+  const schedule = schedules.find((s) => s.id === scheduleId);
+  if (!schedule) return false;
+  const entry = schedule.entries.find((e) => e.week === week);
+  if (!entry) return false;
+
+  const log: FeedLog = {
+    id: uid('log'),
+    plantId,
+    type: 'nutrients',
+    date: new Date().toISOString().split('T')[0],
+    products: entry.products,
+    ph: undefined,
+    ec: undefined,
+    ppm: undefined,
+    waterAmount: undefined,
+    runOff: undefined,
+    temperature: undefined,
+    humidity: undefined,
+    note: entry.note ?? `Applied from ${schedule.name}`,
+    images: [],
+  };
+  mutate((d) => d.logs.push(log));
+  return true;
+}
+
 // --- environments ---
 
 export function addEnvironment(name: string, type: Environment['type']): Environment {
   const env: Environment = { id: uid('env'), name, type };
   mutate((d) => d.environments.push(env));
   return env;
+}
+
+export function updateEnvironment(id: string, patch: Partial<Pick<Environment, 'name' | 'type'>>) {
+  mutate((d) => {
+    const e = d.environments.find((x) => x.id === id);
+    if (!e) return;
+    Object.assign(e, patch);
+  });
+}
+
+export function deleteEnvironment(id: string, reassignToId?: string) {
+  mutate((d) => {
+    d.environments = d.environments.filter((e) => e.id !== id);
+    // Reassign plants to another environment or mark orphaned
+    for (const p of d.plants) {
+      if (p.environmentId === id) {
+        p.environmentId = reassignToId ?? d.environments[0]?.id ?? id;
+      }
+    }
+  });
 }
 
 // --- logs ---

@@ -4,6 +4,7 @@ import { getGrow, recalcAll } from '../data/storage';
 interface HomeScreenProps {
   onPlantSelect: (plantId: string) => void;
   onAddPlant: () => void;
+  onOpenSchedules: () => void;
 }
 
 function stageColor(stage: string) {
@@ -21,7 +22,7 @@ function formatMonth(d: Date) {
   return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 }
 
-export default function HomeScreen({ onPlantSelect, onAddPlant }: HomeScreenProps) {
+export default function HomeScreen({ onPlantSelect, onAddPlant, onOpenSchedules }: HomeScreenProps) {
   recalcAll();
   const grow = getGrow();
 
@@ -77,14 +78,20 @@ export default function HomeScreen({ onPlantSelect, onAddPlant }: HomeScreenProp
             <div className="qa-grid">
               {[
                 { icon: '💧', label: 'Water' },
-                { icon: '🧪', label: 'Nutrients' },
+                { icon: '🧪', label: 'Nutrients', action: onOpenSchedules },
                 { icon: '📸', label: 'Photo' },
                 { icon: '📒', label: 'Log' },
               ].map((a) => (
-                <div key={a.label} className="qa-item">
+                <button
+                  key={a.label}
+                  className="qa-item"
+                  style={{ border: 'none' }}
+                  onClick={a.action}
+                  disabled={!a.action}
+                >
                   <span style={{ fontSize: 22 }}>{a.icon}</span>
                   <span>{a.label}</span>
-                </div>
+                </button>
               ))}
             </div>
           </section>

@@ -9,6 +9,8 @@ import ProfileScreen from './screens/ProfileScreen';
 import AIAssistantScreen from './screens/AIAssistantScreen';
 import AddPlantScreen from './screens/AddPlantScreen';
 import AddLogScreen from './screens/AddLogScreen';
+import SchedulesScreen from './screens/SchedulesScreen';
+import EnvironmentsScreen from './screens/EnvironmentsScreen';
 
 type Screen = 'home' | 'plants' | 'feed' | 'gallery' | 'genie' | 'profile';
 
@@ -17,6 +19,9 @@ export default function App() {
   const [selectedPlant, setSelectedPlant] = useState<string | null>(null);
   const [showAddPlant, setShowAddPlant] = useState(false);
   const [showAddLog, setShowAddLog] = useState(false);
+  const [showSchedules, setShowSchedules] = useState(false);
+  const [showEnvironments, setShowEnvironments] = useState(false);
+  const [schedulePlantId, setSchedulePlantId] = useState<string | undefined>(undefined);
   const [logTargetPlant, setLogTargetPlant] = useState<string | null>(null);
   const [refreshToken, setRefreshToken] = useState(0);
 
@@ -56,6 +61,11 @@ export default function App() {
     setShowAddLog(true);
   }, [selectedPlant]);
 
+  const openSchedules = useCallback((plantId?: string) => {
+    setSchedulePlantId(plantId);
+    setShowSchedules(true);
+  }, []);
+
   let content;
   switch (screen) {
     case 'home':
@@ -64,6 +74,7 @@ export default function App() {
           key={refreshToken}
           onPlantSelect={handlePlantSelect}
           onAddPlant={() => setShowAddPlant(true)}
+          onOpenSchedules={() => openSchedules()}
         />
       );
       break;
@@ -74,12 +85,14 @@ export default function App() {
           plantId={selectedPlant}
           onBack={handleBack}
           onAddLog={() => openAddLog()}
+          onOpenSchedules={() => openSchedules(selectedPlant)}
         />
       ) : (
         <HomeScreen
           key={refreshToken}
           onPlantSelect={handlePlantSelect}
           onAddPlant={() => setShowAddPlant(true)}
+          onOpenSchedules={() => openSchedules()}
         />
       );
       break;
@@ -93,7 +106,11 @@ export default function App() {
       content = <AIAssistantScreen />;
       break;
     case 'profile':
-      content = <ProfileScreen />;
+      content = (
+        <ProfileScreen
+          onOpenEnvironments={() => setShowEnvironments(true)}
+        />
+      );
       break;
     default:
       content = (
@@ -101,6 +118,7 @@ export default function App() {
           key={refreshToken}
           onPlantSelect={handlePlantSelect}
           onAddPlant={() => setShowAddPlant(true)}
+          onOpenSchedules={() => openSchedules()}
         />
       );
   }
@@ -127,6 +145,19 @@ export default function App() {
             setLogTargetPlant(null);
           }}
           onSaved={handleLogSaved}
+        />
+      )}
+
+      {showSchedules && (
+        <SchedulesScreen
+          preselectedPlantId={schedulePlantId}
+          onClose={() => { setShowSchedules(false); setSchedulePlantId(undefined); }}
+        />
+      )}
+
+      {showEnvironments && (
+        <EnvironmentsScreen
+          onClose={() => setShowEnvironments(false)}
         />
       )}
     </div>

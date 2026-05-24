@@ -1,68 +1,80 @@
 // ===== AI ASSISTANT SCREEN =====
 import { useState, useRef, useEffect } from 'react';
+import { sendChatMessage } from '../data/aiService';
+import type { ChatMessage } from '../types';
 
-interface Message {
+interface LocalMessage extends ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
-  text: string;
   suggestions?: string[];
 }
 
-const GREETING: Message = {
-  id: 'greeting',
+const GREETING: ChatMessage = {
   role: 'assistant',
-  text: "Wha gwaan, boss? Mi name Genie. Mi can help yuh track di grow, check nutrients, or tell yuh when fi water. Ask mi anyting!",
-  suggestions: [
-    "When should I water today?",
-    "What nutrients for flowering?",
-    "How much light for seedlings?",
-    "Check my plant health",
-  ],
+  content: "Wha gwaan, boss? Mi name Genie. Mi can help yuh track di grow, check nutrients, or tell yuh when fi water. Ask mi anyting!",
 };
 
-const MOCK_RESPONSES: Record<string, string> = {
-  'water': "Check di soil, if di top inch dry, give dem a good drink. Mi see yuh water White Widow 2 days ago — maybe wait one more day fi let di roots breathe. 💧",
-  'nutrient': "Flowering time now, so Big Bud & Overdrive a di move. Keep pH round 6.0-6.2. Watch di EC so it nuh burn di leaf. 🧪",
-  'light': "Seedling need 18-20 hour light, low intensity. Keep LED about 24 inch away so dem nuh stretch too much. ☀️",
-  'health': "Yuh plants lookin' healthy! White Widow Auto day 90 — trichomes should be milky soon. Keep eyes on humidity, drop it under 50% fi prevent mold inna bloom. 🌿",
-  'help': "Mi can help yuh wid:\n• Water schedules\n• Nutrient recipes\n• Stage transitions\n• Problem diagnosis\n• Harvest timing\nJust ask!",
-};
+const SUGGESTIONS = [
+  "When should I water today?",
+  "What nutrients for flowering?",
+  "How much light for seedlings?",
+  "Check my plant health",
+];
 
 function uid() {
   return `msg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
-function getMockReply(text: string): string {
-  const lower = text.toLowerCase();
-  for (const [key, reply] of Object.entries(MOCK_RESPONSES)) {
-    if (lower.includes(key)) return reply;
-  }
-  return "Respect, mi nuh fully understand dat one yet. Try ask about water, nutrients, light, or check fi see how yuh plants feelin'. 🇯🇲";
-}
-
 export default function AIAssistantScreen() {
-  const [messages, setMessages] = useState<Message[]>([GREETING]);
+  const [messages, setMessages] = useState<LocalMessage[]>([
+    { id: 'greeting', ...GREETING, suggestions: SUGGESTIONS },
+  ]);
   const [input, setInput] = useState('');
   const [typing, setTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages, typing]);
+  }, [messages, typing, error]);
 
-  const send = (text: string) => {
-    if (!text.trim()) return;
-    const userMsg: Message = { id: uid(), role: 'user', text: text.trim() };
+  const send = async (text: string) => {
+    if (!text.trim() || typing) return;
+
+    const userMsg: ChatMessage & { id: string } = { id: uid(), role: 'user', content: text.trim() };
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setTyping(true);
+    setError(null);
 
-    setTimeout(() => {
-      const reply = getMockReply(text);
-      const assistantMsg: Message = { id: uid(), role: 'assistant', text: reply };
-      setMessages((prev) => [...prev, assistantMsg]);
-      setTyping(false);
-    }, 1200 + Math.random() * 800);
+    // Build message history for API (last 10 messages, no IDs)
+    const history: ChatMessage[] = messages
+      .slice(-10)
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({ role: m.role, content: m.content }));
+
+    history.push({ role: 'user', content: text.trim() });
+
+    const result = await sendChatMessage(history, true);
+
+    setTyping(false);
+
+    if (result.error) {
+      setError(result.error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uid(),
+          role: 'assistant',
+          content: `Mi sorry, boss — mi cyan reach di server right now. (${result.error})`,
+        },
+      ]);
+      return;
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      { id: uid(), role: 'assistant', content: result.reply },
+    ]);
   };
 
   return (
@@ -110,12 +122,12 @@ export default function AIAssistantScreen() {
                 lineHeight: 1.5,
                 whiteSpace: 'pre-line',
               }}>
-                {msg.text}
+                {msg.content}
               </div>
 
               {msg.suggestions && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {msg.suggestions.map((s) => (
+                  {msg.suggestions.map((s: string) => (
                     <button
                       key={s}
                       onClick={() => send(s)}

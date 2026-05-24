@@ -58,6 +58,11 @@ export interface ProductDose {
   perGallon?: boolean;
 }
 
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 export interface Grow {
   id: string;
   name: string;
